@@ -1,0 +1,2 @@
+# MotionBuilder_TakeManager
+Test
