@@ -125,7 +125,7 @@ dependencies = [ # Optional
 [tool.setuptools]
 # If there are data files included in your packages that need to be
 # installed, specify them here.
-package-data = {"TakeManager" = ["*.png"]}
+package-data = {"TakeManager/Resources/Icons" = ["*.png"]}
 
 [build-system]
 # These are the assumed default build requirements from pip:
