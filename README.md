@@ -36,5 +36,5 @@ Group your takes. Able to expand/collapse.
 <br><br>
 
 # Contact
-[Website](https://nilssoderman.com)<br>
+[Website](https://jackycoh.portfoliobox.net/)<br>
 [Report an issue](https://github.com/Fuggy/MotionBuilder-TakeManager/issues "Report a bug on the GitHub repository")
