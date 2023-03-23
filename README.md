@@ -27,7 +27,7 @@ Group your takes. You can also expand/collapse them.
 <br>
 
 ## Take Name Warnings
-Take Manager will display a warning should any names contain too many characters or symbols that game engines may not support.
+Take Manager will display a warning should any names contain too many characters or contain symbols that game engines may not support.
 
 ![Screenshot4](https://github.com/Fuggy/MotionBuilder-TakeManager/blob/main/Media/TakeManager_Screenshot4.png?raw=true)
 
