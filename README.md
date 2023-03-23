@@ -6,7 +6,7 @@ Manage takes in Autodesk MotionBuilder in an easier and more efficient way, with
 # Features
 
 ## Everything you need in one place!
-Create new, duplicate, rename and delete takes. Set current active take. Move around the takes.
+Create new, duplicate, rename and delete takes. Set current active take. Rearrange the order of the takes.
 
 ![Screenshot1](https://github.com/Fuggy/MotionBuilder-TakeManager/blob/main/Media/TakeManager_Screenshot1.png?raw=true)
 
