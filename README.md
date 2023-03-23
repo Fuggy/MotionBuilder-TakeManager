@@ -1,4 +1,4 @@
-# MotionBuilder TakeManager
+# MotionBuilder Take Manager
 Manage takes in Autodesk MotionBuilder in an easier and more efficient way, with extra customization options. 
 
 <br><br>
@@ -7,8 +7,6 @@ Manage takes in Autodesk MotionBuilder in an easier and more efficient way, with
 
 ## Everything you need in one place!
 Create new, duplicate, rename and delete takes.
-
-
 
 <br>
 
@@ -19,6 +17,11 @@ Customize your takes with a color.
 
 ## Groups
 Group your takes. Able to expand/collapse.
+
+<br>
+
+## Take Name Warnings
+This tool will display a warning should any names contain too many characters or symbols that game engines may not support.
 
 <br><br>
 
