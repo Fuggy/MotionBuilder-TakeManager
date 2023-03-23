@@ -6,24 +6,32 @@ Manage takes in Autodesk MotionBuilder in an easier and more efficient way, with
 # Features
 
 ## Everything you need in one place!
-Create new, duplicate, rename and delete takes.
+Create new, duplicate, rename and delete takes. Set current active take and move around take order.
+
+![Screenshot1](https://github.com/Fuggy/MotionBuilder-TakeManager/blob/main/Media/TakeManager_Screenshot1.png?raw=true)
 
 <br>
 
 ## Colors
 Customize your takes with a color.
 
+![Screenshot2](https://github.com/Fuggy/MotionBuilder-TakeManager/blob/main/Media/TakeManager_Screenshot2.png?raw=true)
+
 <br>
 
-## Groups
-Group your takes. Able to expand/collapse.
+## Move and Groups
+You can move take order. Also group your takes. Able to expand/collapse.
+
+![Screenshot3](https://github.com/Fuggy/MotionBuilder-TakeManager/blob/main/Media/TakeManager_Screenshot3.png?raw=true)
 
 <br>
 
 ## Take Name Warnings
 This tool will display a warning should any names contain too many characters or symbols that game engines may not support.
 
-<br><br>
+![Screenshot4](https://github.com/Fuggy/MotionBuilder-TakeManager/blob/main/Media/TakeManager_Screenshot4.png?raw=true)
+
+<br>
 
 | Shortcut:     | Action:                                            |
 | ------------- | -------------------------------------------------- |
@@ -33,7 +41,7 @@ This tool will display a warning should any names contain too many characters or
 | Del           | **Delete** takes from selection.                   |
 | Ctrl + G      | Create **group**                                   |
 
-For full instructions, please click on **Help** button!
+For full instructions, please click on **?** button!
 
 <br><br>
 
