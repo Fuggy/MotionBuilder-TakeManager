@@ -617,7 +617,7 @@ class MainWidget(QtWidgets.QWidget):
 
 
     def OnSceneChanged(self, Scene: FBScene, Event: FBEventSceneChange):
-        " Signal if anything in scene is changed natively. "
+        """ Signal if anything in scene is changed natively. """
         # Filter to takes only.
         if isinstance(Event.Component, FBTake):
             self.bIsUpdatingNatively = True
@@ -625,12 +625,14 @@ class MainWidget(QtWidgets.QWidget):
             if Event.Type == FBSceneChangeType.kFBSceneChangeSelect:
                 if not self.bIsSelectingTakesFromTool:
                     Item = self.GetItemByTake(Event.Component)
-                    Item.setSelected(True)
+                    if Item is not None:
+                        Item.setSelected(True)
             # Take deselected.
             elif Event.Type == FBSceneChangeType.kFBSceneChangeUnselect:
                 if not self.bIsSelectingTakesFromTool:
                     Item = self.GetItemByTake(Event.Component)
-                    Item.setSelected(False)
+                    if Item is not None:
+                        Item.setSelected(False)
             self.bIsUpdatingNatively = False
 
 
