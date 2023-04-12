@@ -112,6 +112,8 @@ def GetTakeByUniqueID(UUID: str) -> FBTake:
 
 def IsBound(Object: FBComponent):
     """ Check if an object exists. """
+    if Object is None:
+        return False
     return "Unbound" not in str(Object.__class__)
 
 
@@ -625,13 +627,13 @@ class MainWidget(QtWidgets.QWidget):
             if Event.Type == FBSceneChangeType.kFBSceneChangeSelect:
                 if not self.bIsSelectingTakesFromTool:
                     Item = self.GetItemByTake(Event.Component)
-                    if Item is not None:
+                    if IsBound(Item):
                         Item.setSelected(True)
             # Take deselected.
             elif Event.Type == FBSceneChangeType.kFBSceneChangeUnselect:
                 if not self.bIsSelectingTakesFromTool:
                     Item = self.GetItemByTake(Event.Component)
-                    if Item is not None:
+                    if IsBound(Item):
                         Item.setSelected(False)
             self.bIsUpdatingNatively = False
 
