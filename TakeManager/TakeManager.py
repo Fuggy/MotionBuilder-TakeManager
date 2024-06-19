@@ -171,6 +171,7 @@ class TakeTreeItem(QtWidgets.QTreeWidgetItem):
     PROPERTY_NAME_GROUP = "Parent UUID"
     PROPERTY_NAME_EXPANDED = "Expanded"
     PROPERTY_NAME_COLOR = "Color"
+    PROPERTY_NAME_SEARCH_MATCH_COLOR = "Search Match Color"
 
 
     def __init__(self, Take: FBTake):
@@ -186,23 +187,28 @@ class TakeTreeItem(QtWidgets.QTreeWidgetItem):
         Color = self.GetColor()
         if Color:
             self.SetColor(Color)
+        self.ResetSearchMatchBackgroundColor()
 
 
-    def SelectActiveTake(self, bUpdateGuiOnly = False):
+    def SelectActiveTake(self, bUpdateGuiOnly = False, bIsMatchedSearch = False):
         """ Customize the active take in list. Set current take in MoBu. """
         FontStyle = QtGui.QFont()
         FontStyle.setBold(True)
         FontStyle.setWeight(100)
         self.setFont(0, FontStyle)
-        self.setBackgroundColor(0, QtGui.QColor(60,60,65))
+        if not bIsMatchedSearch:
+            self.setBackgroundColor(0, QtGui.QColor(60,60,65))
         if not bUpdateGuiOnly:
             System.CurrentTake = self.Take
 
 
-    def DeselectActiveTake(self):
+    def DeselectActiveTake(self, bIsMatchedSearch = False):
         """ Reset bold and background color on previous active item in list. """
-        self.setData(0, QtCore.Qt.BackgroundRole, None)
         self.setData(0, QtCore.Qt.FontRole, None)
+        if not bIsMatchedSearch:
+            self.setData(0, QtCore.Qt.BackgroundRole, None)
+        else:
+            pass
 
 
     def DeleteTake(self):
@@ -280,6 +286,31 @@ class TakeTreeItem(QtWidgets.QTreeWidgetItem):
         if ColorProperty:
             self.Take.PropertyRemove(ColorProperty)
 
+
+    def SetSearchMatchBackgroundColor(self, Color):
+        """ Set color of item that matches your search. """
+        ColorVariable = QtGui.QColor(*Color)
+        self.setBackgroundColor(0, ColorVariable)
+        # Custom property.
+        SearchMatchColorProperty = self.Take.PropertyList.Find(self.PROPERTY_NAME_SEARCH_MATCH_COLOR, False)
+        if not SearchMatchColorProperty:
+            SearchMatchColorProperty = self.Take.PropertyCreate(self.PROPERTY_NAME_SEARCH_MATCH_COLOR, FBPropertyType.kFBPT_ColorRGB, "", False, True, None)
+        SearchMatchColorProperty.Data = FBColor(Color[0] / 255, Color[1] / 255, Color[2] / 255)
+
+
+    def ResetSearchMatchBackgroundColor(self):
+        """ Reset color of item that matches your search. """
+        self.setBackgroundColor(0, QtCore.Qt.transparent)
+        SearchMatchColorProperty = self.Take.PropertyList.Find(self.PROPERTY_NAME_SEARCH_MATCH_COLOR, False)
+        if SearchMatchColorProperty:
+            self.Take.PropertyRemove(SearchMatchColorProperty)
+
+
+    def HasSearchMatchBackgroundColor(self):
+        """ Check if item matches your search. """
+        SearchMatchColorProperty = self.Take.PropertyList.Find(self.PROPERTY_NAME_SEARCH_MATCH_COLOR, False)
+        if SearchMatchColorProperty:
+            return True
 
 
 # ---------------------------------------------------------------------------------------------------------------------------- #
@@ -368,6 +399,19 @@ class MainWidget(QtWidgets.QWidget):
 
 
 
+        # ----------------- SEARCH SETTINGS ----------------- #
+
+
+
+        # Create widgets
+        self.SearchBar = QtWidgets.QLineEdit()
+        self.SearchBar.setPlaceholderText("Search...")
+        self.SearchBar.setClearButtonEnabled(True)
+        # Connect the search bar text change event to the search function
+        self.SearchBar.textChanged.connect(self.Search)
+
+
+
         # ----------------- TAKE LIST SETTINGS ----------------- #
 
 
@@ -445,7 +489,9 @@ class MainWidget(QtWidgets.QWidget):
         self.ShortcutDelete =    QShortcut(QKeySequence("Del"),    self.TakeList, self.OnClickActionDelete)
         self.ShortcutGroup =     QShortcut(QKeySequence("Ctrl+G"), self.TakeList, self.CreateNewGroup)
         self.ShortcutSelectAll = QShortcut(QKeySequence("Ctrl+A"), self.TakeList, self.ToggleSelectOrDeselectAll)
-        self.ShortcutDeselect = QShortcut(QKeySequence("D"),       self.TakeList, self.Deselect)
+        self.ShortcutDeselect =  QShortcut(QKeySequence("D"),      self.TakeList, self.Deselect)
+        self.ShortcutSearch =    QShortcut(QKeySequence("Ctrl+F"), self.TakeList, self.FocusOnSearch)
+
 
 
         
@@ -499,6 +545,7 @@ class MainWidget(QtWidgets.QWidget):
         self.LayoutSubWindowBottomRight.setAlignment(QtCore.Qt.AlignRight)
 
         # Add widgets (buttons, labels, etc.) to sub layouts.
+        self.LayoutSubWindowTop.addWidget(self.SearchBar)
         self.LayoutSubWindowTop.addWidget(self.TakeList)
         self.LayoutSubWindowBottomLeft.addWidget(self.LabelWarnings)
         self.LayoutSubWindowBottomRight.addWidget(self.ButtonHelp)
@@ -528,7 +575,7 @@ class MainWidget(QtWidgets.QWidget):
 
 
 
-    def RefreshTakeList(self):
+    def RefreshTakeList(self, bClearSearchBar = True):
         """ Refresh items in list. """
         self.bIsUpdatingNatively = True
         TopLevelItems = self.GetAllListTopLevelItems()
@@ -554,6 +601,12 @@ class MainWidget(QtWidgets.QWidget):
             Item.setExpanded(Item.GetItemExpanded())
         # Check if take name is valid.
         self.ValidateTakeNames()
+        # Clear search bar
+        if bClearSearchBar:
+            self.SearchBar.clear()
+        else:
+            if self.SearchBar.text():
+                self.Search(self.SearchBar.text())            
         self.bIsUpdatingNatively = False
         
 
@@ -598,11 +651,15 @@ class MainWidget(QtWidgets.QWidget):
             Item = TakeTreeItem(Event.Take)
             self.AddNewItemsToList(Item)
             if len(System.Scene.Takes) == 1:
-                self.RefreshTakeList()
+                self.RefreshTakeList(bClearSearchBar = False)
+                if self.SearchBar.text():
+                    self.Search(self.SearchBar.text())
         # Rename.
         elif Event.Type == FBTakeChangeType.kFBTakeChangeRenamed:
             Item = self.GetItemByTake(Event.Take)
             self.RenameTakeOnListOnly(Item)
+            if self.SearchBar.text():
+                self.Search(self.SearchBar.text())
         # Delete.
         elif Event.Type == FBTakeChangeType.kFBTakeChangeRemoved:
             Item = self.GetItemByTake(Event.Take)
@@ -610,7 +667,9 @@ class MainWidget(QtWidgets.QWidget):
         # Move.
         elif Event.Type == FBTakeChangeType.kFBTakeChangeMoved:
             if not self.bIsMovingTakesFromTool:
-                self.RefreshTakeList()
+                self.RefreshTakeList(bClearSearchBar = False)
+                if self.SearchBar.text():
+                    self.Search(self.SearchBar.text())
         # Current Active Take.
         elif Event.Type == FBTakeChangeType.kFBTakeChangeOpened:
             if not self.bIsSettingActiveTakeFromTool:
@@ -687,8 +746,8 @@ class MainWidget(QtWidgets.QWidget):
         ActionColorGreen =  CreateColorPickerAction("Green",   "icons:Color_Green.png",   self.COLOR_GREEN                    )
         ActionColorYellow = CreateColorPickerAction("Yellow",  "icons:Color_Yellow.png",  self.COLOR_YELLOW                   )
         ActionColorOrange = CreateColorPickerAction("Orange",  "icons:Color_Orange.png",  self.COLOR_ORANGE                   )
-        ActionColorRed =    CreateColorPickerAction("Red",     "icons:Color_Red.png",     self.COLOR_RED                      )
         ActionColorPink =   CreateColorPickerAction("Pink",    "icons:Color_Pink.png",    self.COLOR_PINK                     )
+        ActionColorRed =    CreateColorPickerAction("Red",     "icons:Color_Red.png",     self.COLOR_RED                      )
 
         # Create color reset action.
         ActionColorResetAll = QtWidgets.QAction("Reset All", self)
@@ -731,8 +790,8 @@ class MainWidget(QtWidgets.QWidget):
             SubMenuColor.addAction(ActionColorGreen)
             SubMenuColor.addAction(ActionColorYellow)
             SubMenuColor.addAction(ActionColorOrange)
-            SubMenuColor.addAction(ActionColorRed)
             SubMenuColor.addAction(ActionColorPink)
+            SubMenuColor.addAction(ActionColorRed)
             SubMenuColor.addSeparator()
             SubMenuColor.addAction(ActionColorResetAll)
             Menu.addSeparator()
@@ -900,6 +959,8 @@ class MainWidget(QtWidgets.QWidget):
         self.bIsMovingTakesFromTool = False
         self.bPreventSelectionUpdate = False
         self.MakeMoBuSelection()
+        if self.SearchBar.text():
+            self.Search(self.SearchBar.text())
 
 
     def OnClickActionDuplicate(self):
@@ -945,6 +1006,8 @@ class MainWidget(QtWidgets.QWidget):
         self.bIsMovingTakesFromTool = False
         self.bPreventSelectionUpdate = False
         self.MakeMoBuSelection()
+        if self.SearchBar.text():
+            self.Search(self.SearchBar.text())
 
 
 
@@ -984,6 +1047,8 @@ class MainWidget(QtWidgets.QWidget):
         # Check if take name is valid.
         self.ValidateTakeNames()
         self.bIsRenamingTakes = False
+        if self.SearchBar.text():
+            self.Search(self.SearchBar.text())
 
     
     def RenameTakeOnListOnly(self, Item: TakeTreeItem):
@@ -1019,10 +1084,10 @@ class MainWidget(QtWidgets.QWidget):
             # (Call class) Create delete window popup and customize it.
             NewWindow = WindowCreator.BasicThreeButtonPopup(self,
                 Title = "Delete Selected Takes",
-                WindowWidth = 550,
+                WindowWidth = 720,
                 WindowHeight = 120,
                 Label = """WARNING: You cannot undo this operation!""",
-                AllButtonWidth = 170,
+                AllButtonWidth = 225,
                 AllButtonHeight = 30,
                 Button1Name = "Delete selected",
                 Button1Style = """QPushButton { 
@@ -1048,8 +1113,8 @@ class MainWidget(QtWidgets.QWidget):
             # (Call class) Create delete window popup and customize it.
             NewWindow = WindowCreator.BasicTwoButtonPopup(self,
                 Title = "Delete Selected Takes",
-                WindowWidth = 240,
-                WindowHeight = 90,
+                WindowWidth = 350,
+                WindowHeight = 100,
                 Label = "WARNING: You cannot undo this operation!",
                 Button1Name = "Delete",
                 Button1Style = """QPushButton { 
@@ -1114,6 +1179,8 @@ class MainWidget(QtWidgets.QWidget):
         self.bIsMovingTakesFromTool = False
         self.bPreventSelectionUpdate = False
         self.MakeMoBuSelection()
+        if self.SearchBar.text():
+            self.Search(self.SearchBar.text())
 
         
 
@@ -1168,6 +1235,8 @@ class MainWidget(QtWidgets.QWidget):
         self.ValidateTakeNames()
         self.bIsMovingTakesFromTool = False
         self.bPreventSelectionUpdate = False
+        if self.SearchBar.text():
+            self.Search(self.SearchBar.text())
 
 
     def SetItemRelationship(self, Parent: TakeTreeItem, Child: TakeTreeItem):
@@ -1304,9 +1373,11 @@ class MainWidget(QtWidgets.QWidget):
         self.bIsSettingActiveTakeFromTool = True
         # Clear background color and font on current active item.
         CurrentActiveItem: TakeTreeItem = self.GetItemByTake(System.CurrentTake)
-        CurrentActiveItem.DeselectActiveTake()
+        IsSearched = CurrentActiveItem.HasSearchMatchBackgroundColor()
+        CurrentActiveItem.DeselectActiveTake(bIsMatchedSearch = IsSearched)
         # (Call function) Set background color and font on current take.
-        DoubleClickedItem.SelectActiveTake(bUpdateGuiOnly = False)
+        IsSearched = DoubleClickedItem.HasSearchMatchBackgroundColor()
+        DoubleClickedItem.SelectActiveTake(bUpdateGuiOnly = False, bIsMatchedSearch = IsSearched)
         self.bIsSettingActiveTakeFromTool = False
 
 
@@ -1370,8 +1441,8 @@ class MainWidget(QtWidgets.QWidget):
         # (Call class) Create reset color window popup and customize it.
         NewWindow = WindowCreator.BasicTwoButtonPopup(self,
             Title = "Reset All",
-            WindowWidth = 240,
-            WindowHeight = 90,
+            WindowWidth = 350,
+            WindowHeight = 100,
             Label = "Reset all takes to default color?",
             Button1Name = "Reset",
             Button1ToolTip = "Shortcut: Enter",
@@ -1416,6 +1487,43 @@ class MainWidget(QtWidgets.QWidget):
    
 
 
+    def Search(self, text: str):
+        """ Search for a take. """
+        if not self.SearchBar.text():
+            CurrentTakeItem = self.GetItemByTake(System.CurrentTake)
+            for item in self.GetAllListItems():
+                if CurrentTakeItem == item:
+                    item.SelectActiveTake(bUpdateGuiOnly = True)
+                else:
+                    item.ResetSearchMatchBackgroundColor()
+            return
+        
+        # Filter the data based on the search text.
+        filtered_data = [take for take in System.Scene.Takes if text.lower() in take.Name.lower()]
+        non_matching_data = [take for take in System.Scene.Takes if take not in filtered_data]
+
+
+        for take in filtered_data:
+            if take is not None:
+                item = self.GetItemByTake(take)
+                item.SetSearchMatchBackgroundColor((10,60,10))
+        for take in non_matching_data:
+            if take is not None:
+                item = self.GetItemByTake(take)
+                if System.CurrentTake == take:
+                    item.SelectActiveTake(bUpdateGuiOnly = True)
+                else:
+                    item.ResetSearchMatchBackgroundColor()
+
+
+
+    def FocusOnSearch(self):
+        """ Make widget focus on search bar so you can immediately start typing. """
+        self.SearchBar.setFocus()
+        self.SearchBar.selectAll()
+
+
+
     # ----------------- HELP POPUP ----------------- #
 
 
@@ -1425,8 +1533,8 @@ class MainWidget(QtWidgets.QWidget):
         # (Call class) Create help window popup and customize it.
         NewWindow = WindowCreator.BasicOneButtonPopup(self,
             Title = "Help",
-            WindowWidth = 430,
-            WindowHeight = 430,
+            WindowWidth = 650,
+            WindowHeight = 600,
             Label = """
                     <html><head/><body>
                     <p style="line-height:1.3"><span>
@@ -1442,7 +1550,7 @@ class MainWidget(QtWidgets.QWidget):
                     * Drag-and-drop selected takes outside to remove from parent<br>
                     * Customize selected takes with a color which can be found in context menu<br>
                     <br>
-                    <font color=\"Orange\"><b>Shortcuts:</b></font> <i>(Tool has to be in focus!)</i><br>
+                    <font color=\"Orange\"><b>Shortcuts:</b></font> <i>(Window has to be in focus!)</i><br>
                     * (Ctrl + N) Create <b>new</b> empty take from current active take<br>
                     * (Ctrl + D) <b>Duplicate</b> takes from selection<br>
                     * (F2) <b>Rename</b> takes from selection<br>
@@ -1450,7 +1558,8 @@ class MainWidget(QtWidgets.QWidget):
                     * (Ctrl + G) Create <b>group</b><br>
                     * (Shift + Left-Click on group icon) Expand / Collapse all children in selected parent<br>
                     * (Ctrl + A) Select / Deselect all<br>
-                    * (D) Deselect
+                    * (D) Deselect<br>
+                    * (Ctrl + F) Toggle search bar
                     
                     </span></p>
                     </body></html>""",
