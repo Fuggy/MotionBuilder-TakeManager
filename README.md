@@ -26,6 +26,13 @@ Group your takes. You can also expand/collapse them.
 
 <br>
 
+## Search
+Search and highlight takes.
+
+![Screenshot5](https://github.com/Fuggy/MotionBuilder-TakeManager/blob/main/Media/TakeManager_Screenshot5.png?raw=true)
+
+<br>
+
 ## Take Name Warnings
 Take Manager will display a warning should any names contain too many characters or contain symbols that game engines may not support.
 
