@@ -1475,6 +1475,7 @@ class MainWidget(QtWidgets.QWidget):
         self.ShortcutGroup.setEnabled(bHovering)
         self.ShortcutSelectAll.setEnabled(bHovering)
         self.ShortcutDeselect.setEnabled(bHovering)
+        self.ShortcutSearch.setEnabled(bHovering)
 
 
     def OnResize(self, Event):
