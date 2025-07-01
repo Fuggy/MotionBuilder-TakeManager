@@ -76,8 +76,7 @@ class BasicOneButtonPopup(QtWidgets.QDialog):
 
         # Main window.
         self.setWindowTitle(Title)
-        self.setFixedWidth(WindowWidth)
-        self.setFixedHeight(WindowHeight)
+        self.resize(WindowWidth, WindowHeight)
         # Remove maximize, minimize and help buttons.
         self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowMinMaxButtonsHint)
         self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowContextHelpButtonHint)
@@ -105,8 +104,7 @@ class BasicOneButtonPopup(QtWidgets.QDialog):
 
         # Button.
         self.Button = QtWidgets.QPushButton(ButtonName, self)
-        self.Button.setFixedWidth(230)
-        self.Button.setFixedHeight(30)
+        self.Button.resize(230, 30)
         self.Button.setDefault(True)
         self.ButtonShortcut = QShortcut(QKeySequence(ButtonExtraShortcuts), self)
         self.Button.setToolTip(ButtonToolTip)
@@ -257,8 +255,7 @@ class BasicTwoButtonPopup(QtWidgets.QDialog):
 
         # Main window.
         self.setWindowTitle(Title)
-        self.setFixedWidth(WindowWidth)
-        self.setFixedHeight(WindowHeight)
+        self.resize(WindowWidth, WindowHeight)
         # Remove maximize, minimize and help buttons.
         self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowMinMaxButtonsHint)
         self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowContextHelpButtonHint)
@@ -286,8 +283,7 @@ class BasicTwoButtonPopup(QtWidgets.QDialog):
 
         # Button 1.
         self.Button1 = QtWidgets.QPushButton(Button1Name, self)
-        self.Button1.setFixedWidth(90)
-        self.Button1.setFixedHeight(30)
+        self.Button1.resize(90, 30)
         self.Button1.setDefault(True)
         self.Button1Shortcut = QShortcut(QKeySequence(Button1ExtraShortcuts), self)
         self.Button1.setToolTip(Button1ToolTip)
@@ -299,8 +295,7 @@ class BasicTwoButtonPopup(QtWidgets.QDialog):
 
         # Button 2.
         self.Button2 = QtWidgets.QPushButton(Button2Name, self)
-        self.Button2.setFixedWidth(90)
-        self.Button2.setFixedHeight(30)
+        self.Button2.resize(90, 30)
         self.Button2.setDefault(False)
         self.Button2Shortcut = QShortcut(QKeySequence(Button2ExtraShortcuts), self)
         self.Button2.setToolTip(Button2ToolTip)
@@ -469,8 +464,7 @@ class BasicThreeButtonPopup(QtWidgets.QDialog):
 
         # Main window.
         self.setWindowTitle(Title)
-        self.setFixedWidth(WindowWidth)
-        self.setFixedHeight(WindowHeight)
+        self.resize(WindowWidth, WindowHeight)
         # Remove maximize, minimize and help buttons.
         self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowMinMaxButtonsHint)
         self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowContextHelpButtonHint)
@@ -498,8 +492,7 @@ class BasicThreeButtonPopup(QtWidgets.QDialog):
 
         # Button 1.
         self.Button1 = QtWidgets.QPushButton(Button1Name, self)
-        self.Button1.setFixedWidth(AllButtonWidth)
-        self.Button1.setFixedHeight(AllButtonHeight)
+        self.Button1.resize(AllButtonWidth, AllButtonHeight)
         self.Button1.setDefault(True)
         self.Button1Shortcut = QShortcut(QKeySequence(Button1ExtraShortcuts), self)
         self.Button1.setToolTip(Button1ToolTip)
@@ -511,8 +504,7 @@ class BasicThreeButtonPopup(QtWidgets.QDialog):
 
         # Button 2.
         self.Button2 = QtWidgets.QPushButton(Button2Name, self)
-        self.Button2.setFixedWidth(AllButtonWidth)
-        self.Button2.setFixedHeight(AllButtonHeight)
+        self.Button2.resize(AllButtonWidth, AllButtonHeight)
         self.Button2.setDefault(False)
         self.Button2Shortcut = QShortcut(QKeySequence(Button2ExtraShortcuts), self)
         self.Button2.setToolTip(Button2ToolTip)
@@ -524,8 +516,7 @@ class BasicThreeButtonPopup(QtWidgets.QDialog):
 
         # Button 3.
         self.Button3 = QtWidgets.QPushButton(Button3Name, self)
-        self.Button3.setFixedWidth(AllButtonWidth)
-        self.Button3.setFixedHeight(AllButtonHeight)
+        self.Button3.resize(AllButtonWidth, AllButtonHeight)
         self.Button3.setDefault(False)
         self.Button3Shortcut = QShortcut(QKeySequence(Button3ExtraShortcuts), self)
         self.Button3.setToolTip(Button3ToolTip)
