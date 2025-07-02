@@ -511,8 +511,7 @@ class MainWidget(QtWidgets.QWidget):
 
         # Help button.
         self.ButtonHelp = QtWidgets.QPushButton(self)
-        self.ButtonHelp.setFixedWidth(25)
-        self.ButtonHelp.setFixedHeight(25)
+        self.ButtonHelp.resize(25,25)
         self.ButtonHelp.setIcon(QtWidgets.QApplication.style().standardIcon(QtWidgets.QStyle.SP_TitleBarContextHelpButton)) 
         self.ButtonHelp.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))        
         self.ButtonHelp.setToolTip("Help")
@@ -963,6 +962,15 @@ class MainWidget(QtWidgets.QWidget):
             self.Search(self.SearchBar.text())
 
 
+    def updateListHackFix(self):
+        """ This hack fixes a weird bug where the native take list did not update correctly when moving takes using the tool. For some reason, creating a new take fixes this. """
+        # Create temp take.
+        TempTake = FBTake(None)
+        System.Scene.Takes.append(TempTake)
+        # Delete temp take.
+        TempTake.FBDelete()
+
+
     def OnClickActionDuplicate(self):
         """ Duplicate takes from selection. """
         self.bIsMovingTakesFromTool = True
@@ -1162,6 +1170,7 @@ class MainWidget(QtWidgets.QWidget):
         """ Move and group items in list. """
         if self.bIsUpdatingNatively or self.bIsDuplicatingItems:
             return
+        self.bIsMovingTakesFromTool = True
         self.bPreventSelectionUpdate = True
         # Grouping.
         Parent: TakeTreeItem = self.TakeList.itemFromIndex(ParentModelIndex)
@@ -1176,6 +1185,8 @@ class MainWidget(QtWidgets.QWidget):
             Item.setSelected(True)
         # Sync take order natively to match our own list.
         self.SyncTakeOrderNatively()
+        # Hack fix to make sure the native take list is following the tool take list.
+        self.updateListHackFix()
         self.bIsMovingTakesFromTool = False
         self.bPreventSelectionUpdate = False
         self.MakeMoBuSelection()
