@@ -56,6 +56,6 @@ def UnFreezeViewport():
     Tool = ViewportPatchWindowTool(ToolName)
 
     # Destroy all tools including the "viewportpatch", doing this incase e.g. "viewportpatch 1" would've been created.
-    for x in FBToolList:
+    for x in list(FBToolList):
         if ToolName in x:
             FBDestroyToolByName(x)
