@@ -22,6 +22,7 @@ from importlib import reload
 from PySide2 import QtCore, QtWidgets, QtGui
 from PySide2.QtWidgets import QShortcut
 from PySide2.QtGui import QKeySequence
+from PySide2.QtCore import QTimer
 
 # Find folder path to this file. This will enable all other files to be accessed within the same folder.
 CurrentDirectory = os.path.dirname(__file__)
@@ -467,6 +468,9 @@ class MainWidget(QtWidgets.QWidget):
         self.TakeList.itemCollapsed.connect(self.OnCollapse)
         # (Call function) Move and group items in list.
         self.TakeList.model().rowsInserted.connect(self.MoveTakeItems)
+        self.MoveTakesTimer = QTimer()
+        self.MoveTakesTimer.setSingleShot(True)
+        self.MoveTakesTimer.timeout.connect(self.MoveTakeItemsOutput)
         # (Call function) Selecting items in list also selects takes in MotionBuilder navigator.
         self.TakeList.itemSelectionChanged.connect(self.MakeMoBuSelection)
 
@@ -555,6 +559,8 @@ class MainWidget(QtWidgets.QWidget):
 
 
 
+        self.bIsToolInitialized = True
+        self.bPreventInfiniteTimer = False
         self.bIsUpdatingNatively = True
         self.bIsMovingTakesFromTool = False
         self.bPreventSelectionUpdate = False
@@ -667,6 +673,9 @@ class MainWidget(QtWidgets.QWidget):
         elif Event.Type == FBTakeChangeType.kFBTakeChangeMoved:
             if not self.bIsMovingTakesFromTool:
                 self.RefreshTakeList(bClearSearchBar = False)
+                Item = self.GetItemByTake(Event.Take)
+                if IsBound(Item):
+                    Item.setSelected(True)
                 if self.SearchBar.text():
                     self.Search(self.SearchBar.text())
         # Current Active Take.
@@ -1165,11 +1174,20 @@ class MainWidget(QtWidgets.QWidget):
     # ----------------- MOVE TAKE EVENTS ----------------- #
 
 
+    def StartMoveTakesTimer(self):
+        """ Timer is used to reduce multiple signal emissions when moving takes into a single callback. """
+        if self.bPreventInfiniteTimer:
+            return
+        self.MoveTakesTimer.start(0)
+        self.bPreventInfiniteTimer = True
+
 
     def MoveTakeItems(self, ParentModelIndex: QtCore.QModelIndex, FirstIndex: int, LastIndex: int):
         """ Move and group items in list. """
-        if self.bIsUpdatingNatively or self.bIsDuplicatingItems:
+        if self.bIsUpdatingNatively or self.bIsDuplicatingItems or self.bIsToolInitialized:
+            self.bIsToolInitialized = False
             return
+        self.bPreventInfiniteTimer = False
         self.bIsMovingTakesFromTool = True
         self.bPreventSelectionUpdate = True
         # Grouping.
@@ -1183,6 +1201,11 @@ class MainWidget(QtWidgets.QWidget):
                 Item.SetParentProperty(Parent)
                 Parent.setExpanded(True)
             Item.setSelected(True)
+        self.StartMoveTakesTimer()
+        
+    
+    def MoveTakeItemsOutput(self):
+        """ Triggered when timer runs out, meaning this can only be called once. This finalizes the take list order. """
         # Sync take order natively to match our own list.
         self.SyncTakeOrderNatively()
         # Hack fix to make sure the native take list is following the tool take list.
@@ -1192,8 +1215,8 @@ class MainWidget(QtWidgets.QWidget):
         self.MakeMoBuSelection()
         if self.SearchBar.text():
             self.Search(self.SearchBar.text())
+    
 
-        
 
     # ----------------- GROUP MANAGEMENT ----------------- #
           
