@@ -629,6 +629,7 @@ class MainWidget(QtWidgets.QWidget):
         Application.OnFileOpen.Add(self.OnFileOpen)
         Application.OnFileNew.Add(self.OnFileOpen)
         Application.OnFileMerge.Add(self.OnFileOpen)
+        Application.OnFileSave.Add(self.OnSaveRequest)
 
 
     def onClose(self, *args):
@@ -645,14 +646,14 @@ class MainWidget(QtWidgets.QWidget):
         Application.OnFileOpen.Remove(self.OnFileOpen)
         Application.OnFileNew.Remove(self.OnFileOpen)
         Application.OnFileMerge.Remove(self.OnFileOpen)
-
+        Application.OnFileSave.Remove(self.OnSaveRequest)
 
 
     def OnTakeChanged(self, Scene: FBScene, Event: FBEventTakeChange):
         """ Signal if any takes are changed natively. """
         self.bIsUpdatingNatively = True
         # New / Duplicate / Group.
-        if Event.Type == FBTakeChangeType.kFBTakeChangeAdded:    
+        if Event.Type == FBTakeChangeType.kFBTakeChangeAdded:   
             Item = TakeTreeItem(Event.Take)
             self.AddNewItemsToList(Item)
             if len(System.Scene.Takes) == 1:
@@ -660,28 +661,28 @@ class MainWidget(QtWidgets.QWidget):
                 if self.SearchBar.text():
                     self.Search(self.SearchBar.text())
         # Rename.
-        elif Event.Type == FBTakeChangeType.kFBTakeChangeRenamed:
+        elif Event.Type == FBTakeChangeType.kFBTakeChangeRenamed and not self.bIsRenamingTakes:
             Item = self.GetItemByTake(Event.Take)
             self.RenameTakeOnListOnly(Item)
             if self.SearchBar.text():
                 self.Search(self.SearchBar.text())
         # Delete.
-        elif Event.Type == FBTakeChangeType.kFBTakeChangeRemoved:
+        elif Event.Type == FBTakeChangeType.kFBTakeChangeRemoved and not self.bIsMovingTakesFromTool:
             Item = self.GetItemByTake(Event.Take)
             self.DeleteTakeItems(Item, bDeleteChildren = False, bUpdateGuiOnly = True)
         # Move.
-        elif Event.Type == FBTakeChangeType.kFBTakeChangeMoved:
-            if not self.bIsMovingTakesFromTool:
-                self.RefreshTakeList(bClearSearchBar = False)
-                Item = self.GetItemByTake(Event.Take)
-                if IsBound(Item):
-                    Item.setSelected(True)
-                if self.SearchBar.text():
-                    self.Search(self.SearchBar.text())
+        elif Event.Type == FBTakeChangeType.kFBTakeChangeMoved and not self.bIsMovingTakesFromTool:
+            self.RefreshTakeList(bClearSearchBar = False)
+            Item = self.GetItemByTake(Event.Take)
+            if IsBound(Item):
+                Item.setSelected(True)
+            if self.SearchBar.text():
+                self.Search(self.SearchBar.text())
         # Current Active Take.
-        elif Event.Type == FBTakeChangeType.kFBTakeChangeOpened:
-            if not self.bIsSettingActiveTakeFromTool:
-                self.SetCurrentTakeListOnly()
+        elif Event.Type == FBTakeChangeType.kFBTakeChangeOpened and not self.bIsSettingActiveTakeFromTool and not self.bIsMovingTakesFromTool:
+            self.SetCurrentTakeListOnly()
+            if self.SearchBar.text():
+                self.Search(self.SearchBar.text())
         self.bIsUpdatingNatively = False
 
 
@@ -706,16 +707,22 @@ class MainWidget(QtWidgets.QWidget):
 
 
     def OnFileOpen(self, InApplication: FBApplication, Event: FBEvent):
-        """ Remove when file is opened. """
+        """ Remove when a scene is opening. """
         System.Scene.OnTakeChange.Remove(self.OnTakeChanged)
 
 
     def OnFileOpenCompleted(self, InApplication: FBApplication, Event: FBEvent):
-        """ Refresh list when opening a scene is completed. """
+        """ Add when a scene is completely opened. Also refresh take list. """
         self.RefreshTakeList()
         System.Scene.OnTakeChange.Add(self.OnTakeChanged)
         
     
+    def OnSaveRequest(self, InApplication: FBApplication, Event: FBEvent):
+        """ Triggers on starting a save request, before it has finished saving. """
+        # Hack fix to make sure the native take list is following the tool take list. This is done by creating and deleting a new take.
+        self.updateListHackFix()
+
+
 
     # ----------------- CONTEXT MENU SETTINGS ----------------- #
 
@@ -960,6 +967,7 @@ class MainWidget(QtWidgets.QWidget):
             # Deselect all models in scene as some native shortcuts may interfere when there is a selection, such as S or Shift+S keys.
             DeselectAllModels()
             # Select newly created item and start renaming it.
+            self.SetCurrentTakeListOnly()
             Item.setSelected(True)
             self.TakeList.editItem(Item)
         # Check if take name is valid.
@@ -1012,6 +1020,7 @@ class MainWidget(QtWidgets.QWidget):
         self.bIsDuplicatingItems = False
         # Sync take order natively to match our own list.
         self.SyncTakeOrderNatively()
+        self.SetCurrentTakeListOnly()
         # Start renaming if only 1 item was duplicated.
         if len(SelectedItems) == 1:
             # Deselect all models in scene as some native shortcuts may interfere when there is a selection, such as S or Shift+S keys.
@@ -1144,6 +1153,8 @@ class MainWidget(QtWidgets.QWidget):
                 for Item in SelectedItems:
                     self.DeleteTakeItems(Item, bDeleteChildren = False)
         self.bIsMovingTakesFromTool = False
+        if self.SearchBar.text():
+            self.Search(self.SearchBar.text())
 
 
     def DeleteTakeItems(self, Item: TakeTreeItem, bDeleteChildren, bUpdateGuiOnly = False):
@@ -1162,9 +1173,11 @@ class MainWidget(QtWidgets.QWidget):
         # Check if deletion was executed from this tool or natively.
         if not bUpdateGuiOnly:
             Item.DeleteTake()
+            self.GetParent(Item).removeChild(Item)
         else:
             # Delete new parent's child which is old parent.
             self.GetParent(Item).removeChild(Item)
+        self.SetCurrentTakeListOnly()
         # Check if take name is valid.
         self.ValidateTakeNames()
         self.bPreventSelectionUpdate = False
@@ -1172,6 +1185,7 @@ class MainWidget(QtWidgets.QWidget):
 
 
     # ----------------- MOVE TAKE EVENTS ----------------- #
+
 
 
     def StartMoveTakesTimer(self):
@@ -1208,8 +1222,6 @@ class MainWidget(QtWidgets.QWidget):
         """ Triggered when timer runs out, meaning this can only be called once. This finalizes the take list order. """
         # Sync take order natively to match our own list.
         self.SyncTakeOrderNatively()
-        # Hack fix to make sure the native take list is following the tool take list.
-        self.updateListHackFix()
         self.bIsMovingTakesFromTool = False
         self.bPreventSelectionUpdate = False
         self.MakeMoBuSelection()
@@ -1263,6 +1275,7 @@ class MainWidget(QtWidgets.QWidget):
         # Deselect all models in scene as some native shortcuts may interfere when there is a selection, such as S or Shift+S keys.
         DeselectAllModels()
         # Select newly created group and start renaming it.
+        self.SetCurrentTakeListOnly()
         NewItemGroup.setSelected(True)
         self.TakeList.editItem(NewItemGroup)
         # Check if take name is valid.
@@ -1402,7 +1415,7 @@ class MainWidget(QtWidgets.QWidget):
             Item.DeselectActiveTake()
 
 
-    def SetCurrentTake(self, DoubleClickedItem: TakeTreeItem, ColumnIndex: int):
+    def SetCurrentTake(self, DoubleClickedItem: TakeTreeItem, ColumnIndex: int = 0):
         """ Set current active take. """
         self.bIsSettingActiveTakeFromTool = True
         # Clear background color and font on current active item.
