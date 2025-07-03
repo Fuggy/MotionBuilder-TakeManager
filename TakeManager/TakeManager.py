@@ -661,7 +661,7 @@ class MainWidget(QtWidgets.QWidget):
                 if self.SearchBar.text():
                     self.Search(self.SearchBar.text())
         # Rename.
-        elif Event.Type == FBTakeChangeType.kFBTakeChangeRenamed and not self.bIsRenamingTakes:
+        elif Event.Type == FBTakeChangeType.kFBTakeChangeRenamed:
             Item = self.GetItemByTake(Event.Take)
             self.RenameTakeOnListOnly(Item)
             if self.SearchBar.text():
